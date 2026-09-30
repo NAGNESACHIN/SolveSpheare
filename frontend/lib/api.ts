@@ -20,5 +20,5 @@ export async function getReviews(productId: string) { return request<Review[]>(`
 export async function analyzeProduct(productId: string) { return request<{ status: string }>(`/api/analysis/products/${productId}`, { method: "POST" }); }
 export async function generateInsights(productId: string) { return request<{ status: string; insights_created: number }>(`/api/insights/products/${productId}/generate`, { method: "POST" }); }
 
-export type ReviewAnalysis = { review_id:string; sentiment:{label:string;score:number|null;positive_score:number|null;negative_score:number|null;neutral_score:number|null}|null; aspects:{name:string;mention:string|null;sentiment:string|null;score:number|null;confidence:number|null}[]; topics:{name:string;relevance:number|null;confidence:number|null}[] };
+export type ReviewAnalysis = { review_id:string; sentiment:{label:string;score:number|null;positive_score:number|null;negative_score:number|null;neutral_score:number|null}|null; aspects:{name:string;mention:string|null;sentiment:string|null;score:number|null;confidence:number|null}[]; topics:{name:string;relevance:number|null;confidence:number|null}[]; ai_explanation?:{title:string;explanation:string;key_signal:string;confidence:number}|null };
 export async function getReviewAnalysis(reviewId:string){return request<ReviewAnalysis>(`/api/analysis/reviews/${reviewId}`);}
