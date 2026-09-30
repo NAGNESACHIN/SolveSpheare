@@ -7,6 +7,8 @@ import {
   getProducts,
   getReviews,
   getTopics,
+  analyzeProduct,
+  generateInsights,
   Aspect,
   Overview,
   Product,
@@ -24,6 +26,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [analysisStatus, setAnalysisStatus] = useState("");
 
   useEffect(() => {
     getProducts()
@@ -34,7 +37,7 @@ export default function Dashboard() {
       .catch(() => setError("Could not connect to the analytics API."));
   }, []);
 
-  useEffect(() => {
+  const loadDashboard = () => {
     if (!selected) return;
     setLoading(true);
     setError("");
@@ -52,7 +55,32 @@ export default function Dashboard() {
       })
       .catch(() => setError("Some dashboard data could not be loaded. Run product analysis first."))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadDashboard();
   }, [selected]);
+
+  const runFullAnalysis = async () => {
+    if (!selected || analyzing) return;
+    setAnalyzing(true);
+    setError("");
+    setAnalysisStatus("Analyzing reviews, sentiment, aspects, and topics…");
+    try {
+      await analyzeProduct(selected);
+      setAnalysisStatus("Generating evidence-backed AI insights…");
+      await generateInsights(selected);
+      setAnalysisStatus("Refreshing dashboard…");
+      await loadDashboard();
+      setAnalysisStatus("Analysis complete.");
+      window.setTimeout(() => setAnalysisStatus(""), 2500);
+    } catch {
+      setError("Product intelligence generation failed. Check the backend logs and try again.");
+      setAnalysisStatus("");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const distribution = overview?.sentiment_distribution ?? {};
   const totalAnalyzed = Object.values(distribution).reduce((sum, value) => sum + value, 0);
@@ -85,12 +113,13 @@ export default function Dashboard() {
               {products.length === 0 && <option value="">No products</option>}
               {products.map((p) => <option value={p.id} key={p.id}>{p.name}</option>)}
             </select>
-            <button className="primary" onClick={async () => { if (!selected || analyzing) return; setAnalyzing(true); setError(""); try { await analyzeProduct(selected); window.location.reload(); } catch { setError("Product analysis failed. Check the backend logs."); } finally { setAnalyzing(false); } }}>{analyzing ? "Analyzing…" : "Analyze Product"}</button>
+            <button className="primary" onClick={runFullAnalysis} disabled={analyzing}>{analyzing ? "Analyzing…" : "Analyze Product"}</button>
           </div>
         </header>
 
         {error && <div className="alert">{error}</div>}
-        {loading && <div className="loading">Loading product intelligence…</div>}
+        {analysisStatus && <div className="loading">{analysisStatus}</div>}
+        {loading && !analyzing && <div className="loading">Loading product intelligence…</div>}
 
         <section className="kpi-grid">
           <Kpi title="Total Reviews" value={(overview?.total_reviews ?? 0).toLocaleString()} meta="Customer feedback" />
