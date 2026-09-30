@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-async function request<T>(path: string): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, { ...options, cache: "no-store" });
   if (!response.ok) throw new Error(`API request failed: ${response.status}`);
   return response.json();
 }
@@ -15,7 +15,7 @@ export type Overview = {
 };
 export type Aspect = { aspect: string; mentions: number; average_sentiment: number };
 export type Topic = { topic_id: string; name: string; keywords: Record<string, string[]>; review_count: number; average_relevance: number };
-export type Review = { id: string; review_text: string; title?: string | null; rating?: number | null; reviewer_name?: string | null; source?: string | null };
+export type Review = { id: string; product_id?: string; review_text: string; title?: string | null; rating?: number | null; reviewer_name?: string | null; source?: string | null; verified_purchase?: boolean | null; review_date?: string | null };
 
 export async function getProducts() {
   return request<Product[]>("/api/products");
