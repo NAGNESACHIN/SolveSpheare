@@ -6,6 +6,7 @@ from .routes.reviews import router as reviews_router
 from .routes.analytics import router as analytics_router
 from .routes.analysis import router as analysis_router
 from .routes.insights import router as insights_router
+from .routes.qa import router as qa_router
 
 app = FastAPI(
     title="Product Review Intelligence & Voice of Customer Analytics API",
@@ -34,6 +35,7 @@ app.include_router(reviews_router)
 app.include_router(analytics_router)
 app.include_router(analysis_router)
 app.include_router(insights_router)
+app.include_router(qa_router)
 
 @app.get("/health")
 def health() -> dict[str, str]:
