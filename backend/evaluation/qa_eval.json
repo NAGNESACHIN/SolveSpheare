@@ -1,16 +1,517 @@
 {
-  "description": "Ground-truth benchmark for evaluating product Q&A correctness and evidence grounding. Ground truth below is tied to the repository demo seed data and should be regenerated when benchmark data changes.",
-  "scoring": {"correctness":"0-2","evidence_support":"0-2","completeness":"0-2","no_hallucination":"0-2","uncertainty_handling":"0-2"},
+  "description": "30-case ground-truth benchmark for SolveSpheare Product Q&A. Ground truth is tied to the repository demo seed data; numerical and evidence-ID checks should be added when the live analyzed snapshot is available.",
+  "scoring": {
+    "correctness": "0-2",
+    "evidence_support": "0-2",
+    "completeness": "0-2",
+    "no_hallucination": "0-2",
+    "uncertainty_handling": "0-2"
+  },
   "questions": [
-    {"id":"sentiment-01","question":"Are customers generally satisfied?","type":"sentiment","expected":{"facts":["There are 6 demo reviews.","Ratings are 5, 4, 3, 3, 2, and 5.","The average rating is about 3.67/5."],"required_terms":["generally","satisfied"],"must_not_claim":["all customers are satisfied"]}},
-    {"id":"pain-01","question":"What are customers most unhappy about?","type":"pain_point","expected":{"facts":["The seed reviews contain negative signals around camera, price, customer service, delivery, and software.","The lowest-rated review is about price, camera, and customer service."],"required_terms":["price","camera"],"must_not_claim":[]}},
-    {"id":"positive-01","question":"What do customers like most?","type":"positive_signal","expected":{"facts":["Positive reviews mention battery, performance, camera, display, design, and value."],"required_terms":["performance","battery"],"must_not_claim":[]}},
-    {"id":"aspect-01","question":"How do customers feel about the product's performance?","type":"aspect","expected":{"facts":["Performance is described positively in multiple reviews.","One review reports performance issues such as app crashes and confusing software updates."],"required_terms":["performance"],"must_not_claim":["performance is universally positive"]}},
-    {"id":"topic-01","question":"What customer themes appear repeatedly?","type":"topic","expected":{"facts":["The seed reviews repeatedly discuss performance, battery, camera, price/value, delivery, and software/customer service."],"required_terms":["performance"],"must_not_claim":[]}},
-    {"id":"recommendation-01","question":"What should the product team investigate first?","type":"recommendation","expected":{"facts":["Negative evidence includes camera disappointment, expensive pricing, unhelpful customer service, late/damaged delivery, and software issues."],"required_terms":["camera"],"must_not_claim":["the root cause is known"]}},
-    {"id":"numeric-01","question":"Which aspect has the most mentions?","type":"numeric","expected":{"facts":["The answer must use the analyzed aspect counts from the current database snapshot."],"required_terms":[],"must_not_claim":["a count not present in the supplied evidence"]}},
-    {"id":"numeric-02","question":"What is the strongest negative sentiment signal?","type":"numeric","expected":{"facts":["The answer must identify a negative signal using the current analyzed sentiment/aspect evidence."],"required_terms":[],"must_not_claim":["an unsupported numerical value"]}},
-    {"id":"insufficient-01","question":"Why does the battery fail after one year?","type":"insufficient_evidence","expected":{"facts":["The seed reviews do not establish a one-year battery failure or its cause."],"required_terms":["insufficient"],"must_not_claim":["a technical cause of battery failure"]}},
-    {"id":"mixed-01","question":"Do customers agree about battery quality?","type":"contradictory_evidence","expected":{"facts":["The seed reviews contain positive battery-life feedback and a complaint about slow battery charging."],"required_terms":["battery"],"must_not_claim":["all customers agree"]}}
+    {
+      "id": "sentiment-01",
+      "question": "Are customers generally satisfied?",
+      "type": "sentiment",
+      "expected": {
+        "facts": [
+          "There are 6 demo reviews.",
+          "Ratings are 5, 4, 3, 3, 2, and 5.",
+          "The average rating is about 3.67/5."
+        ],
+        "required_terms": [
+          "generally",
+          "satisfied"
+        ],
+        "must_not_claim": [
+          "all customers are satisfied"
+        ]
+      }
+    },
+    {
+      "id": "sentiment-02",
+      "question": "Is customer sentiment completely positive?",
+      "type": "sentiment",
+      "expected": {
+        "facts": [
+          "The dataset contains positive, neutral, and negative signals."
+        ],
+        "required_terms": [
+          "not",
+          "completely"
+        ],
+        "must_not_claim": [
+          "all reviews are positive"
+        ]
+      }
+    },
+    {
+      "id": "sentiment-03",
+      "question": "What does the rating distribution suggest?",
+      "type": "sentiment",
+      "expected": {
+        "facts": [
+          "Ratings range from 2 to 5.",
+          "There are two 5-star reviews, one 4-star, two 3-star, and one 2-star review."
+        ],
+        "required_terms": [
+          "ratings"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "sentiment-04",
+      "question": "How strong is the overall customer satisfaction signal?",
+      "type": "sentiment",
+      "expected": {
+        "facts": [
+          "The average rating is about 3.67/5.",
+          "The evidence includes both positive and negative reviews."
+        ],
+        "required_terms": [
+          "3.67"
+        ],
+        "must_not_claim": [
+          "uniformly positive"
+        ]
+      }
+    },
+    {
+      "id": "sentiment-05",
+      "question": "Are there any clearly negative reviews?",
+      "type": "sentiment",
+      "expected": {
+        "facts": [
+          "A 2-star review reports disappointing camera quality, expensive pricing, and unhelpful customer service."
+        ],
+        "required_terms": [
+          "negative"
+        ],
+        "must_not_claim": [
+          "there are no negative reviews"
+        ]
+      }
+    },
+    {
+      "id": "pain-01",
+      "question": "What are customers most unhappy about?",
+      "type": "pain_point",
+      "expected": {
+        "facts": [
+          "Negative signals include camera, price, customer service, delivery, and software."
+        ],
+        "required_terms": [
+          "price",
+          "camera"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "pain-02",
+      "question": "What complaint is associated with the lowest rating?",
+      "type": "pain_point",
+      "expected": {
+        "facts": [
+          "The lowest rating is 2/5.",
+          "That review mentions disappointing camera quality, expensive pricing, and unhelpful customer service."
+        ],
+        "required_terms": [
+          "camera",
+          "price"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "pain-03",
+      "question": "What delivery problems are reported?",
+      "type": "pain_point",
+      "expected": {
+        "facts": [
+          "One review says delivery was late and the package arrived damaged."
+        ],
+        "required_terms": [
+          "late",
+          "damaged"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "pain-04",
+      "question": "What software-related problems appear?",
+      "type": "pain_point",
+      "expected": {
+        "facts": [
+          "One review reports app crashes and a confusing software update."
+        ],
+        "required_terms": [
+          "software"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "pain-05",
+      "question": "Is customer service mentioned negatively?",
+      "type": "pain_point",
+      "expected": {
+        "facts": [
+          "The 2-star review says customer service was not helpful."
+        ],
+        "required_terms": [
+          "customer service"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "positive-01",
+      "question": "What do customers like most?",
+      "type": "positive_signal",
+      "expected": {
+        "facts": [
+          "Positive reviews mention battery, performance, camera, display, design, and value."
+        ],
+        "required_terms": [
+          "performance",
+          "battery"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "positive-02",
+      "question": "What positive feedback exists about performance?",
+      "type": "positive_signal",
+      "expected": {
+        "facts": [
+          "Performance is described as smooth or fast in positive reviews."
+        ],
+        "required_terms": [
+          "performance"
+        ],
+        "must_not_claim": [
+          "performance is always perfect"
+        ]
+      }
+    },
+    {
+      "id": "positive-03",
+      "question": "What do customers say about the display?",
+      "type": "positive_signal",
+      "expected": {
+        "facts": [
+          "One review says the display is bright and the screen looks amazing."
+        ],
+        "required_terms": [
+          "display"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "positive-04",
+      "question": "Is value for money mentioned positively?",
+      "type": "positive_signal",
+      "expected": {
+        "facts": [
+          "One review calls the phone excellent for the price."
+        ],
+        "required_terms": [
+          "value",
+          "price"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "positive-05",
+      "question": "What positive design feedback is present?",
+      "type": "positive_signal",
+      "expected": {
+        "facts": [
+          "One review says the design is comfortable."
+        ],
+        "required_terms": [
+          "design",
+          "comfortable"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "aspect-01",
+      "question": "How do customers feel about the product's performance?",
+      "type": "aspect",
+      "expected": {
+        "facts": [
+          "Performance is described positively in multiple reviews.",
+          "One review reports app crashes and confusing software updates."
+        ],
+        "required_terms": [
+          "performance"
+        ],
+        "must_not_claim": [
+          "performance is universally positive"
+        ]
+      }
+    },
+    {
+      "id": "aspect-02",
+      "question": "How is battery experience described?",
+      "type": "aspect",
+      "expected": {
+        "facts": [
+          "Battery life is described as excellent.",
+          "Another review says battery charging is slow."
+        ],
+        "required_terms": [
+          "battery"
+        ],
+        "must_not_claim": [
+          "all battery feedback is positive"
+        ]
+      }
+    },
+    {
+      "id": "aspect-03",
+      "question": "How is camera quality perceived?",
+      "type": "aspect",
+      "expected": {
+        "facts": [
+          "One review says camera quality is great.",
+          "Another says the camera is disappointing."
+        ],
+        "required_terms": [
+          "camera"
+        ],
+        "must_not_claim": [
+          "everyone likes the camera"
+        ]
+      }
+    },
+    {
+      "id": "aspect-04",
+      "question": "What is the evidence about price?",
+      "type": "aspect",
+      "expected": {
+        "facts": [
+          "One review says the price is expensive.",
+          "Another describes the phone as excellent for the price."
+        ],
+        "required_terms": [
+          "price"
+        ],
+        "must_not_claim": [
+          "all customers think it is expensive"
+        ]
+      }
+    },
+    {
+      "id": "aspect-05",
+      "question": "Is performance feedback consistent?",
+      "type": "aspect",
+      "expected": {
+        "facts": [
+          "Several reviews describe performance positively, while one reports app crashes."
+        ],
+        "required_terms": [
+          "performance",
+          "mixed"
+        ],
+        "must_not_claim": [
+          "all performance feedback is positive"
+        ]
+      }
+    },
+    {
+      "id": "topic-01",
+      "question": "What customer themes appear repeatedly?",
+      "type": "topic",
+      "expected": {
+        "facts": [
+          "Reviews discuss performance, battery, camera, price/value, delivery, software, and customer service."
+        ],
+        "required_terms": [
+          "performance"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "topic-02",
+      "question": "Which themes include both positive and negative evidence?",
+      "type": "topic",
+      "expected": {
+        "facts": [
+          "Performance, battery, camera, and price/value each have mixed signals across the seed reviews."
+        ],
+        "required_terms": [
+          "performance",
+          "battery"
+        ],
+        "must_not_claim": [
+          "every theme is uniformly positive"
+        ]
+      }
+    },
+    {
+      "id": "topic-03",
+      "question": "What major customer themes should a product team monitor?",
+      "type": "topic",
+      "expected": {
+        "facts": [
+          "The evidence supports monitoring performance, battery, camera, price/value, delivery, software, and customer service."
+        ],
+        "required_terms": [
+          "performance",
+          "camera"
+        ],
+        "must_not_claim": []
+      }
+    },
+    {
+      "id": "recommendation-01",
+      "question": "What should the product team investigate first?",
+      "type": "recommendation",
+      "expected": {
+        "facts": [
+          "Negative evidence includes camera disappointment, expensive pricing, unhelpful customer service, late/damaged delivery, and software issues."
+        ],
+        "required_terms": [
+          "camera"
+        ],
+        "must_not_claim": [
+          "the root cause is known"
+        ]
+      }
+    },
+    {
+      "id": "recommendation-02",
+      "question": "What product area could be investigated based on software complaints?",
+      "type": "recommendation",
+      "expected": {
+        "facts": [
+          "One review reports app crashes and a confusing software update."
+        ],
+        "required_terms": [
+          "software"
+        ],
+        "must_not_claim": [
+          "the exact technical root cause is known"
+        ]
+      }
+    },
+    {
+      "id": "numeric-01",
+      "question": "Which aspect has the most mentions?",
+      "type": "numeric",
+      "expected": {
+        "facts": [
+          "The answer must use the analyzed aspect counts from the current database snapshot."
+        ],
+        "required_terms": [],
+        "must_not_claim": [
+          "a count not present in the supplied evidence"
+        ]
+      }
+    },
+    {
+      "id": "numeric-02",
+      "question": "What is the strongest negative sentiment signal?",
+      "type": "numeric",
+      "expected": {
+        "facts": [
+          "The answer must identify a negative signal using the current analyzed sentiment/aspect evidence."
+        ],
+        "required_terms": [],
+        "must_not_claim": [
+          "an unsupported numerical value"
+        ]
+      }
+    },
+    {
+      "id": "numeric-03",
+      "question": "How many reviews are in the demo dataset?",
+      "type": "numeric",
+      "expected": {
+        "facts": [
+          "There are exactly 6 demo reviews."
+        ],
+        "required_terms": [
+          "6"
+        ],
+        "must_not_claim": [
+          "a different review count"
+        ]
+      }
+    },
+    {
+      "id": "insufficient-01",
+      "question": "Why does the battery fail after one year?",
+      "type": "insufficient_evidence",
+      "expected": {
+        "facts": [
+          "The seed reviews do not establish a one-year battery failure or its cause."
+        ],
+        "required_terms": [
+          "insufficient"
+        ],
+        "must_not_claim": [
+          "a technical cause of battery failure"
+        ]
+      }
+    },
+    {
+      "id": "insufficient-02",
+      "question": "Did customers report a specific manufacturing defect?",
+      "type": "insufficient_evidence",
+      "expected": {
+        "facts": [
+          "The reviews do not establish a specific manufacturing defect."
+        ],
+        "required_terms": [
+          "insufficient"
+        ],
+        "must_not_claim": [
+          "a specific manufacturing defect"
+        ]
+      }
+    },
+    {
+      "id": "mixed-01",
+      "question": "Do customers agree about battery quality?",
+      "type": "contradictory_evidence",
+      "expected": {
+        "facts": [
+          "The reviews contain positive battery-life feedback and a complaint about slow charging."
+        ],
+        "required_terms": [
+          "battery"
+        ],
+        "must_not_claim": [
+          "all customers agree"
+        ]
+      }
+    },
+    {
+      "id": "mixed-02",
+      "question": "Do customers agree about camera quality?",
+      "type": "contradictory_evidence",
+      "expected": {
+        "facts": [
+          "One review praises camera quality while another says the camera is disappointing."
+        ],
+        "required_terms": [
+          "camera",
+          "mixed"
+        ],
+        "must_not_claim": [
+          "all customers agree"
+        ]
+      }
+    }
   ]
 }
