@@ -429,7 +429,12 @@
         ],
         "must_not_claim": [
           "a different review count"
-        ]
+        ],
+        "numeric": {
+          "value": 6,
+          "tolerance": 0,
+          "unit": "reviews"
+        }
       }
     },
     {
