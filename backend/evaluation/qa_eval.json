@@ -1,0 +1,22 @@
+{
+  "description": "Ground-truth benchmark for evaluating product Q&A correctness and evidence grounding.",
+  "scoring": {
+    "correctness": "0-2",
+    "evidence_support": "0-2",
+    "completeness": "0-2",
+    "no_hallucination": "0-2",
+    "uncertainty_handling": "0-2"
+  },
+  "questions": [
+    {"id":"sentiment-01","question":"Are customers generally satisfied?","type":"sentiment"},
+    {"id":"pain-01","question":"What are customers most unhappy about?","type":"pain_point"},
+    {"id":"positive-01","question":"What do customers like most?","type":"positive_signal"},
+    {"id":"aspect-01","question":"How do customers feel about the product's performance?","type":"aspect"},
+    {"id":"topic-01","question":"What customer themes appear repeatedly?","type":"topic"},
+    {"id":"recommendation-01","question":"What should the product team investigate first?","type":"recommendation"},
+    {"id":"numeric-01","question":"Which aspect has the most mentions?","type":"numeric"},
+    {"id":"numeric-02","question":"What is the strongest negative sentiment signal?","type":"numeric"},
+    {"id":"insufficient-01","question":"Why does the battery fail after one year?","type":"insufficient_evidence"},
+    {"id":"mixed-01","question":"Do customers agree about battery quality?","type":"contradictory_evidence"}
+  ]
+}
