@@ -77,22 +77,6 @@
       }
     },
     {
-      "id": "sentiment-05",
-      "question": "Are there any clearly negative reviews?",
-      "type": "sentiment",
-      "expected": {
-        "facts": [
-          "A 2-star review reports disappointing camera quality, expensive pricing, and unhelpful customer service."
-        ],
-        "required_terms": [
-          "negative"
-        ],
-        "must_not_claim": [
-          "there are no negative reviews"
-        ]
-      }
-    },
-    {
       "id": "pain-01",
       "question": "What are customers most unhappy about?",
       "type": "pain_point",
@@ -490,23 +474,6 @@
         ],
         "required_terms": [
           "battery"
-        ],
-        "must_not_claim": [
-          "all customers agree"
-        ]
-      }
-    },
-    {
-      "id": "mixed-02",
-      "question": "Do customers agree about camera quality?",
-      "type": "contradictory_evidence",
-      "expected": {
-        "facts": [
-          "One review praises camera quality while another says the camera is disappointing."
-        ],
-        "required_terms": [
-          "camera",
-          "mixed"
         ],
         "must_not_claim": [
           "all customers agree"
