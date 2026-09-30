@@ -69,3 +69,49 @@ Analytics snapshot:
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
         # AI enrichment is optional; deterministic analytics must continue to work.
         return None
+
+
+def generate_review_explanation(review_text: str, evidence: dict[str, Any]) -> dict[str, Any] | None:
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return None
+
+    model = os.getenv("OPENAI_MODEL", DEFAULT_MODEL)
+    prompt = f"""You are a product-review analyst for SolveSpheare.
+
+Explain the supplied review using ONLY the review text and structured analysis evidence. Do not invent facts or causes.
+
+Return ONLY valid JSON with:
+title, explanation, key_signal, confidence
+
+Rules:
+- title: concise explanation title.
+- explanation: 2-3 sentences explaining why the observed sentiment/aspects/topics are supported by the review.
+- key_signal: one short phrase identifying the most important customer signal.
+- confidence: number from 0 to 1 reflecting evidence strength.
+- Do not mention being an AI.
+
+Review:
+{review_text}
+
+Structured evidence:
+{json.dumps(evidence, ensure_ascii=False)}
+"""
+
+    payload = {"model": model, "input": prompt, "max_output_tokens": 350}
+    request = urllib.request.Request(
+        OPENAI_API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = json.loads(response.read().decode("utf-8"))
+        text = _extract_text(body)
+        if not text:
+            return None
+        return json.loads(text)
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError, ValueError):
+        return None
