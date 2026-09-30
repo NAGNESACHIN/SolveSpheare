@@ -90,3 +90,42 @@ def product_topics(product_id: UUID, db: Session = Depends(get_db)):
             for topic_id, name, keywords, count, avg in rows
         ],
     }
+
+@router.get("/reviews/{review_id}")
+def review_analysis(review_id: UUID, db: Session = Depends(get_db)):
+    review = db.get(Review, review_id)
+    if review is None:
+        raise HTTPException(status_code=404, detail="Review not found")
+
+    sentiment = db.scalar(select(SentimentScore).where(SentimentScore.review_id == review_id).order_by(SentimentScore.created_at.desc()))
+    aspect_rows = db.execute(
+        select(Aspect.name, ReviewAspect.mention_text, ReviewAspect.sentiment_label, ReviewAspect.sentiment_score, ReviewAspect.confidence)
+        .join(ReviewAspect, ReviewAspect.aspect_id == Aspect.id)
+        .where(ReviewAspect.review_id == review_id)
+        .order_by(Aspect.name)
+    ).all()
+    topic_rows = db.execute(
+        select(Topic.name, ReviewTopic.relevance_score, ReviewTopic.confidence)
+        .join(ReviewTopic, ReviewTopic.topic_id == Topic.id)
+        .where(ReviewTopic.review_id == review_id)
+        .order_by(ReviewTopic.relevance_score.desc())
+    ).all()
+
+    return {
+        "review_id": str(review_id),
+        "sentiment": None if sentiment is None else {
+            "label": sentiment.sentiment_label,
+            "score": float(sentiment.score) if sentiment.score is not None else None,
+            "positive_score": float(sentiment.positive_score) if sentiment.positive_score is not None else None,
+            "negative_score": float(sentiment.negative_score) if sentiment.negative_score is not None else None,
+            "neutral_score": float(sentiment.neutral_score) if sentiment.neutral_score is not None else None,
+        },
+        "aspects": [
+            {"name": name, "mention": mention, "sentiment": label, "score": float(score) if score is not None else None, "confidence": float(conf) if conf is not None else None}
+            for name, mention, label, score, conf in aspect_rows
+        ],
+        "topics": [
+            {"name": name, "relevance": float(relevance) if relevance is not None else None, "confidence": float(conf) if conf is not None else None}
+            for name, relevance, conf in topic_rows
+        ],
+    }
