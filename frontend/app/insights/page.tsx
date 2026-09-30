@@ -7,6 +7,7 @@ import MetricCard from "../../components/analytics/MetricCard";
 import { LoadingState, EmptyState } from "../../components/analytics/States";
 import { generateInsights, getInsights } from "../../lib/analytics-api";
 import type { Insight } from "../../types/analytics";
+import { request } from "../../lib/request";
 
 export default function InsightsPage() {
   return (
@@ -24,6 +25,9 @@ function Content({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState("");
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<{answer:string;evidence_points:string[];confidence:number}|null>(null);
+  const [asking, setAsking] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -67,6 +71,25 @@ function Content({ productId }: { productId: string }) {
     }
   }
 
+
+
+  async function handleAsk() {
+    if (!question.trim() || asking) return;
+    setAsking(true);
+    setError("");
+    try {
+      const result = await request<{answer:{answer:string;evidence_points:string[];confidence:number}}>(
+        `/api/qa/products/${productId}`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: question.trim() }) }
+      );
+      setAnswer(result.answer);
+    } catch {
+      setError("Could not answer the question. Make sure OPENAI_API_KEY is configured on the backend.");
+    } finally {
+      setAsking(false);
+    }
+  }
+
   if (loading) return <LoadingState text="Loading AI insights…" />;
 
   return (
@@ -84,6 +107,33 @@ function Content({ productId }: { productId: string }) {
       </div>
 
       {error && <div className="alert">{error}</div>}
+
+      <ChartCard title="Ask about this product" subtitle="Ask questions grounded in the product's analyzed review evidence.">
+        <div className="qa-form">
+          <input
+            value={question}
+            onChange={e => setQuestion(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") handleAsk(); }}
+            placeholder="e.g. What are customers most unhappy about?"
+            maxLength={500}
+          />
+          <button className="primary-button" onClick={handleAsk} disabled={asking || !question.trim()}>
+            {asking ? "Thinking…" : "Ask"}
+          </button>
+        </div>
+        {answer && (
+          <div className="qa-answer">
+            <p>{answer.answer}</p>
+            <div className="qa-evidence">
+              <strong>Evidence</strong>
+              <ul>{answer.evidence_points.map((point, i) => <li key={i}>{point}</li>)}</ul>
+            </div>
+            <small>Confidence: {Math.round(answer.confidence * 100)}%</small>
+          </div>
+        )}
+      </ChartCard>
+
+
 
       {!items.length ? (
         <ChartCard title="Ready to generate" subtitle="No insight snapshot exists for this product yet.">
