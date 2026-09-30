@@ -36,3 +36,6 @@ export async function getTopics(productId: string) {
 export async function getReviews(productId: string) {
   return request<Review[]>(`/api/reviews?product_id=${productId}`);
 }
+
+export type ReviewAnalysis = { review_id:string; sentiment:{label:string;score:number|null;positive_score:number|null;negative_score:number|null;neutral_score:number|null}|null; aspects:{name:string;mention:string|null;sentiment:string|null;score:number|null;confidence:number|null}[]; topics:{name:string;relevance:number|null;confidence:number|null}[] };
+export async function getReviewAnalysis(reviewId:string){return request<ReviewAnalysis>(`/api/analysis/reviews/${reviewId}`);}
