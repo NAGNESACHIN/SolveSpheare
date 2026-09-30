@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
 
   useEffect(() => {
     getProducts()
@@ -84,7 +85,7 @@ export default function Dashboard() {
               {products.length === 0 && <option value="">No products</option>}
               {products.map((p) => <option value={p.id} key={p.id}>{p.name}</option>)}
             </select>
-            <button className="primary" onClick={() => selected && window.location.reload()}>Analyze Product</button>
+            <button className="primary" onClick={async () => { if (!selected || analyzing) return; setAnalyzing(true); setError(""); try { await analyzeProduct(selected); window.location.reload(); } catch { setError("Product analysis failed. Check the backend logs."); } finally { setAnalyzing(false); } }}>{analyzing ? "Analyzing…" : "Analyze Product"}</button>
           </div>
         </header>
 
