@@ -1,0 +1,64 @@
+name: Q&A Evaluation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/evaluation/**'
+      - 'backend/app/services/llm.py'
+      - 'backend/app/routes/qa.py'
+  pull_request:
+    paths:
+      - 'backend/evaluation/**'
+      - 'backend/app/services/llm.py'
+      - 'backend/app/routes/qa.py'
+
+jobs:
+  evaluator-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validate evaluator syntax
+        run: python -m py_compile backend/evaluation/run_qa_eval.py
+
+      - name: Validate benchmark JSON
+        run: python -m json.tool backend/evaluation/qa_eval.json >/dev/null
+
+      - name: Smoke-test ground-truth scoring
+        run: |
+          python - <<'PY'
+          import importlib.util
+          from pathlib import Path
+
+          path = Path('backend/evaluation/run_qa_eval.py')
+          spec = importlib.util.spec_from_file_location('qa_eval', path)
+          module = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(module)
+
+          case = {
+              'type': 'insufficient_evidence',
+              'expected': {
+                  'facts': ['The dataset does not establish the cause.'],
+                  'required_terms': ['insufficient'],
+                  'must_not_claim': ['the battery failed because of heat']
+              }
+          }
+          answer = {
+              'answer': 'There is insufficient evidence to determine the cause.',
+              'evidence_points': ['The available reviews do not establish a cause.', 'No one-year failure evidence is supplied.'],
+              'confidence': 0.35
+          }
+          scores = module.score_answer(case, answer)
+          assert scores['correctness'] == 2
+          assert scores['evidence_support'] == 2
+          assert scores['uncertainty_handling'] == 2
+          assert scores['no_hallucination'] == 2
+          print('Q&A evaluator smoke test passed:', scores)
+          PY
