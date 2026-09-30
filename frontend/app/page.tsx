@@ -1,41 +1,63 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getOverview, getProducts, Product, Overview } from "../lib/api";
-
-const demoSentiment = [
-  { label: "Positive", value: 68, className: "positive" },
-  { label: "Neutral", value: 18, className: "neutral" },
-  { label: "Negative", value: 14, className: "negative" }
-];
-
-const aspects = [
-  ["Battery", 124, 0.72],
-  ["Display", 98, 0.81],
-  ["Performance", 87, 0.61],
-  ["Camera", 76, 0.18],
-  ["Price", 65, -0.41],
-  ["Delivery", 52, -0.63]
-];
+import {
+  getAspects,
+  getOverview,
+  getProducts,
+  getReviews,
+  getTopics,
+  Aspect,
+  Overview,
+  Product,
+  Review,
+  Topic
+} from "../lib/api";
 
 export default function Dashboard() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [overview, setOverview] = useState<Overview | null>(null);
   const [selected, setSelected] = useState("");
+  const [overview, setOverview] = useState<Overview | null>(null);
+  const [aspects, setAspects] = useState<Aspect[]>([]);
+  const [topics, setTopics] = useState<Topic[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([getProducts(), getOverview()])
-      .then(([productData, overviewData]) => {
-        setProducts(productData);
-        setOverview(overviewData);
-        if (productData[0]) setSelected(productData[0].id);
+    getProducts()
+      .then((data) => {
+        setProducts(data);
+        if (data[0]) setSelected(data[0].id);
       })
-      .catch(() => undefined);
+      .catch(() => setError("Could not connect to the analytics API."));
   }, []);
 
-  const sentiment = overview?.sentiment_distribution ?? {};
-  const total = overview?.total_reviews ?? 0;
-  const rating = overview?.average_rating ?? 0;
+  useEffect(() => {
+    if (!selected) return;
+    setLoading(true);
+    setError("");
+    Promise.all([
+      getOverview(selected),
+      getAspects(selected),
+      getTopics(selected),
+      getReviews(selected)
+    ])
+      .then(([overviewData, aspectData, topicData, reviewData]) => {
+        setOverview(overviewData);
+        setAspects(aspectData.aspects);
+        setTopics(topicData.topics);
+        setReviews(reviewData.slice(0, 5));
+      })
+      .catch(() => setError("Some dashboard data could not be loaded. Run product analysis first."))
+      .finally(() => setLoading(false));
+  }, [selected]);
+
+  const distribution = overview?.sentiment_distribution ?? {};
+  const totalAnalyzed = Object.values(distribution).reduce((sum, value) => sum + value, 0);
+  const positive = totalAnalyzed ? Math.round(((distribution.positive ?? 0) / totalAnalyzed) * 100) : 0;
+  const neutral = totalAnalyzed ? Math.round(((distribution.neutral ?? 0) / totalAnalyzed) * 100) : 0;
+  const negative = totalAnalyzed ? Math.max(0, 100 - positive - neutral) : 0;
 
   return (
     <main className="app-shell">
@@ -54,69 +76,97 @@ export default function Dashboard() {
           <div>
             <p className="eyebrow">PRODUCT INTELLIGENCE</p>
             <h1>Customer Voice Dashboard</h1>
+            <p className="header-note">Turn customer reviews into product decisions.</p>
           </div>
           <div className="product-control">
             <label>Product</label>
             <select value={selected} onChange={(e) => setSelected(e.target.value)}>
+              {products.length === 0 && <option value="">No products</option>}
               {products.map((p) => <option value={p.id} key={p.id}>{p.name}</option>)}
             </select>
-            <button className="primary">Analyze Product</button>
+            <button className="primary" onClick={() => selected && window.location.reload()}>Analyze Product</button>
           </div>
         </header>
 
+        {error && <div className="alert">{error}</div>}
+        {loading && <div className="loading">Loading product intelligence…</div>}
+
         <section className="kpi-grid">
-          <Kpi title="Total Reviews" value={total.toLocaleString()} meta="Customer feedback" />
-          <Kpi title="Average Rating" value={rating ? `${rating.toFixed(1)} ★` : "—"} meta="Out of 5" />
-          <Kpi title="Positive Sentiment" value={`${sentiment.positive ?? 0}%`} meta="Overall sentiment" />
-          <Kpi title="Negative Sentiment" value={`${sentiment.negative ?? 0}%`} meta="Needs attention" danger />
+          <Kpi title="Total Reviews" value={(overview?.total_reviews ?? 0).toLocaleString()} meta="Customer feedback" />
+          <Kpi title="Average Rating" value={overview?.average_rating ? `${overview.average_rating.toFixed(1)} ★` : "—"} meta="Out of 5" />
+          <Kpi title="Positive Sentiment" value={`${positive}%`} meta={`${distribution.positive ?? 0} analyzed reviews`} />
+          <Kpi title="Negative Sentiment" value={`${negative}%`} meta={`${distribution.negative ?? 0} analyzed reviews`} danger />
         </section>
 
         <section className="two-column">
           <Panel title="Sentiment Overview" subtitle="Customer emotional response">
             <div className="sentiment-layout">
-              <div className="donut" style={{ background: `conic-gradient(var(--positive) 0 ${sentiment.positive ?? 0}%, var(--neutral) ${sentiment.positive ?? 0}% ${(sentiment.positive ?? 0) + (sentiment.neutral ?? 0)}%, var(--negative) ${(sentiment.positive ?? 0) + (sentiment.neutral ?? 0)}% 100%)` }}>
-                <div><strong>{sentiment.positive ?? 0}%</strong><span>Positive</span></div>
+              <div className="donut" style={{ background: `conic-gradient(var(--positive) 0 ${positive}%, var(--neutral) ${positive}% ${positive + neutral}%, var(--negative) ${positive + neutral}% 100%)` }}>
+                <div><strong>{positive}%</strong><span>Positive</span></div>
               </div>
               <div className="legend">
-                {demoSentiment.map((s) => <div className="legend-row" key={s.label}><span className={`dot ${s.className}`} />{s.label}<strong>{sentiment[s.label.toLowerCase()] ?? s.value}%</strong></div>)}
+                <Legend label="Positive" value={positive} className="positive" />
+                <Legend label="Neutral" value={neutral} className="neutral" />
+                <Legend label="Negative" value={negative} className="negative" />
               </div>
             </div>
           </Panel>
 
-          <Panel title="Voice of Customer" subtitle="Recurring customer pain points">
-            <div className="pain-list">
-              {["Slow charging", "Delivery delays", "Software issues", "Price / value"].map((x, i) => (
-                <div className="pain" key={x}><span className={i < 2 ? "severity high" : "severity medium"}>!</span><div><strong>{x}</strong><small>{[84,61,47,39][i]} mentions</small></div></div>
-              ))}
-            </div>
+          <Panel title="Voice of Customer" subtitle="Highest-frequency customer concerns">
+            {aspects.length === 0 ? <Empty text="Run analysis to discover customer pain points." /> : (
+              <div className="pain-list">
+                {aspects.filter(a => a.average_sentiment < 0).slice(0, 4).map((a) => (
+                  <div className="pain" key={a.aspect}><span className="severity high">!</span><div><strong>{a.aspect}</strong><small>{a.mentions} mentions · sentiment {a.average_sentiment.toFixed(2)}</small></div></div>
+                ))}
+                {aspects.every(a => a.average_sentiment >= 0) && <Empty text="No negative aspect signals detected." />}
+              </div>
+            )}
             <button className="text-button">View all complaints →</button>
           </Panel>
         </section>
 
         <Panel title="Aspect Sentiment" subtitle="What customers feel about each product attribute">
-          <div className="aspect-list">
-            {aspects.map(([name, mentions, score]) => {
-              const n = Number(score);
-              const width = Math.max(8, Math.round(Math.abs(n) * 100));
-              return <div className="aspect-row" key={String(name)}>
-                <span className="aspect-name">{name}</span><span className="mentions">{String(mentions)} mentions</span>
-                <div className="bar"><i className={n >= 0 ? "bar-positive" : "bar-negative"} style={{ width: `${width}%` }} /></div>
-                <strong className={n >= 0 ? "score positive-text" : "score negative-text"}>{n > 0 ? "+" : ""}{n.toFixed(2)}</strong>
-              </div>;
-            })}
-          </div>
+          {aspects.length === 0 ? <Empty text="No aspect analysis available yet." /> : (
+            <div className="aspect-list">
+              {aspects.slice(0, 8).map((item) => {
+                const n = item.average_sentiment;
+                const width = Math.max(8, Math.round(Math.abs(n) * 100));
+                return (
+                  <div className="aspect-row" key={item.aspect}>
+                    <span className="aspect-name">{item.aspect}</span>
+                    <span className="mentions">{item.mentions} mentions</span>
+                    <div className="bar"><i className={n >= 0 ? "bar-positive" : "bar-negative"} style={{ width: `${width}%` }} /></div>
+                    <strong className={n >= 0 ? "score positive-text" : "score negative-text"}>{n > 0 ? "+" : ""}{n.toFixed(2)}</strong>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </Panel>
 
         <section className="two-column bottom">
           <Panel title="Customer Topics" subtitle="Automatically discovered themes">
-            <div className="topic-grid">{["🔋 Battery", "📱 Camera", "⚡ Performance", "💰 Price", "📦 Delivery", "⚙ Software"].map(t => <div className="topic" key={t}>{t}<span>View topic →</span></div>)}</div>
+            {topics.length === 0 ? <Empty text="No topics discovered yet." /> : (
+              <div className="topic-grid">
+                {topics.slice(0, 6).map((topic) => (
+                  <div className="topic" key={topic.topic_id}>
+                    <strong>{topic.name}</strong>
+                    <small>{topic.review_count} reviews · relevance {topic.average_relevance.toFixed(2)}</small>
+                    <span>{Object.values(topic.keywords || {}).flat().slice(0, 4).join(" · ") || "View topic"} →</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </Panel>
+
           <Panel title="Recent Reviews" subtitle="Latest customer feedback">
-            <div className="review-list">
-              <Review stars="★★★★★" text="Excellent battery life and display." sentiment="Positive" />
-              <Review stars="★★☆☆☆" text="Package arrived late and damaged." sentiment="Negative" />
-              <Review stars="★★★★☆" text="Great performance for the price." sentiment="Positive" />
-            </div>
+            {reviews.length === 0 ? <Empty text="No reviews found for this product." /> : (
+              <div className="review-list">
+                {reviews.map((review) => (
+                  <Review key={review.id} review={review} />
+                ))}
+              </div>
+            )}
           </Panel>
         </section>
       </section>
@@ -132,6 +182,15 @@ function Panel({ title, subtitle, children }: { title: string; subtitle: string;
   return <section className="panel"><div className="panel-head"><div><h2>{title}</h2><p>{subtitle}</p></div></div>{children}</section>;
 }
 
-function Review({ stars, text, sentiment }: { stars: string; text: string; sentiment: string }) {
-  return <div className="review"><div><span className="stars">{stars}</span><strong>{text}</strong></div><span className={sentiment === "Positive" ? "pill positive-pill" : "pill negative-pill"}>{sentiment}</span></div>;
+function Legend({ label, value, className }: { label: string; value: number; className: string }) {
+  return <div className="legend-row"><span className={`dot ${className}`} />{label}<strong>{value}%</strong></div>;
+}
+
+function Review({ review }: { review: Review }) {
+  const rating = review.rating ?? 0;
+  return <div className="review"><div><span className="stars">{rating ? "★".repeat(Math.round(rating)) + "☆".repeat(5 - Math.round(rating)) : "—"}</span><strong>{review.title || review.review_text.slice(0, 70)}</strong></div><span className="pill">{review.source || "Review"}</span></div>;
+}
+
+function Empty({ text }: { text: string }) {
+  return <div className="empty">{text}</div>;
 }
