@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from ..database.models import Aspect, Review, ReviewAspect, SentimentScore, Topic, ReviewTopic
 from ..database.session import get_db
 from ..services.analysis import analyze_product, analyze_review
+from ..services.llm import generate_review_explanation
 
 router = APIRouter(prefix="/api/analysis", tags=["analysis"])
 
@@ -111,7 +112,7 @@ def review_analysis(review_id: UUID, db: Session = Depends(get_db)):
         .order_by(ReviewTopic.relevance_score.desc())
     ).all()
 
-    return {
+    result = {
         "review_id": str(review_id),
         "sentiment": None if sentiment is None else {
             "label": sentiment.sentiment_label,
@@ -129,3 +130,12 @@ def review_analysis(review_id: UUID, db: Session = Depends(get_db)):
             for name, relevance, conf in topic_rows
         ],
     }
+
+    evidence = {
+        "sentiment": result["sentiment"],
+        "aspects": result["aspects"],
+        "topics": result["topics"],
+    }
+    ai_explanation = generate_review_explanation(review.review_text, evidence)
+    result["ai_explanation"] = ai_explanation
+    return result
