@@ -1,6 +1,7 @@
 """Run the product Q&A benchmark against a deployed SolveSpheare API."""
 import argparse, json, urllib.error, urllib.request
 from pathlib import Path
+import re
 
 
 def post(url, payload):
@@ -34,6 +35,21 @@ def score_answer(case, answer):
         mixed_markers = ["mixed", "both", "however", "while", "different", "disagree"]
         scores["uncertainty_handling"] = 2 if any(marker in lower for marker in mixed_markers) else 1
 
+    # Minimal structured numeric validation where ground truth is explicit.
+    numeric = expected.get("numeric")
+    if numeric:
+        nums = []
+        for match in re.findall(r"(?<![\\w.])[-+]?\\d+(?:\\.\\d+)?", text):
+            try:
+                nums.append(float(match))
+            except ValueError:
+                pass
+        target = float(numeric["value"])
+        tolerance = float(numeric.get("tolerance", 0))
+        numeric_ok = any(abs(value - target) <= tolerance for value in nums)
+        scores["correctness"] = 2 if numeric_ok else 0
+        scores["evidence_support"] = 2 if numeric_ok and evidence else (1 if numeric_ok else 0)
+        scores["no_hallucination"] = 2 if numeric_ok else 0
     confidence = answer.get("confidence")
     if not isinstance(confidence, (int,float)) or not 0 <= confidence <= 1:
         scores["uncertainty_handling"] = 0
