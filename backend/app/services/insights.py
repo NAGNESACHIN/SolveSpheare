@@ -1,9 +1,12 @@
 from collections import Counter
 from datetime import datetime
+import os
 from uuid import UUID
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
+
+from .llm import generate_customer_voice_summary
 
 from ..database.models import (
     AIInsight,
@@ -190,6 +193,51 @@ def generate_product_insights(db: Session, product_id: UUID) -> list[AIInsight]:
                     period_end=now,
                 )
             )
+
+    snapshot = {
+        "product": product.name,
+        "review_count": total,
+        "sentiment_distribution": dict(sentiment_counts),
+        "aspects": [
+            {
+                "name": row[1],
+                "mentions": row[2],
+                "average_sentiment": round(float(row[3] or 0), 4),
+            }
+            for row in aspect_rows[:8]
+        ],
+        "topics": [
+            {
+                "name": row[1],
+                "review_count": row[2],
+                "average_relevance": round(float(row[3] or 0), 4),
+            }
+            for row in topic_rows[:5]
+        ],
+    }
+
+    llm_result = generate_customer_voice_summary(snapshot)
+    if llm_result:
+        try:
+            confidence = max(0.0, min(1.0, float(llm_result.get("confidence", 0.7))))
+        except (TypeError, ValueError):
+            confidence = 0.7
+
+        created.append(
+            AIInsight(
+                product_id=product_id,
+                insight_type="llm_summary",
+                title=str(llm_result.get("title") or "AI Customer Voice Summary")[:500],
+                summary=str(llm_result.get("summary") or "AI enrichment was generated from the current analytics snapshot."),
+                recommendation=str(llm_result.get("recommendation") or "") or None,
+                evidence=snapshot,
+                severity="low",
+                confidence=confidence,
+                model_name=os.getenv("OPENAI_MODEL", "gpt-5.6-luna"),
+                model_version="responses-api",
+                period_end=now,
+            )
+        )
 
     db.add_all(created)
     db.flush()
