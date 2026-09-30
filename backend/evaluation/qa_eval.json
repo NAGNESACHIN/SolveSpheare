@@ -1,22 +1,16 @@
 {
-  "description": "Ground-truth benchmark for evaluating product Q&A correctness and evidence grounding.",
-  "scoring": {
-    "correctness": "0-2",
-    "evidence_support": "0-2",
-    "completeness": "0-2",
-    "no_hallucination": "0-2",
-    "uncertainty_handling": "0-2"
-  },
+  "description": "Ground-truth benchmark for evaluating product Q&A correctness and evidence grounding. Ground truth below is tied to the repository demo seed data and should be regenerated when benchmark data changes.",
+  "scoring": {"correctness":"0-2","evidence_support":"0-2","completeness":"0-2","no_hallucination":"0-2","uncertainty_handling":"0-2"},
   "questions": [
-    {"id":"sentiment-01","question":"Are customers generally satisfied?","type":"sentiment"},
-    {"id":"pain-01","question":"What are customers most unhappy about?","type":"pain_point"},
-    {"id":"positive-01","question":"What do customers like most?","type":"positive_signal"},
-    {"id":"aspect-01","question":"How do customers feel about the product's performance?","type":"aspect"},
-    {"id":"topic-01","question":"What customer themes appear repeatedly?","type":"topic"},
-    {"id":"recommendation-01","question":"What should the product team investigate first?","type":"recommendation"},
-    {"id":"numeric-01","question":"Which aspect has the most mentions?","type":"numeric"},
-    {"id":"numeric-02","question":"What is the strongest negative sentiment signal?","type":"numeric"},
-    {"id":"insufficient-01","question":"Why does the battery fail after one year?","type":"insufficient_evidence"},
-    {"id":"mixed-01","question":"Do customers agree about battery quality?","type":"contradictory_evidence"}
+    {"id":"sentiment-01","question":"Are customers generally satisfied?","type":"sentiment","expected":{"facts":["There are 6 demo reviews.","Ratings are 5, 4, 3, 3, 2, and 5.","The average rating is about 3.67/5."],"required_terms":["generally","satisfied"],"must_not_claim":["all customers are satisfied"]}},
+    {"id":"pain-01","question":"What are customers most unhappy about?","type":"pain_point","expected":{"facts":["The seed reviews contain negative signals around camera, price, customer service, delivery, and software.","The lowest-rated review is about price, camera, and customer service."],"required_terms":["price","camera"],"must_not_claim":[]}},
+    {"id":"positive-01","question":"What do customers like most?","type":"positive_signal","expected":{"facts":["Positive reviews mention battery, performance, camera, display, design, and value."],"required_terms":["performance","battery"],"must_not_claim":[]}},
+    {"id":"aspect-01","question":"How do customers feel about the product's performance?","type":"aspect","expected":{"facts":["Performance is described positively in multiple reviews.","One review reports performance issues such as app crashes and confusing software updates."],"required_terms":["performance"],"must_not_claim":["performance is universally positive"]}},
+    {"id":"topic-01","question":"What customer themes appear repeatedly?","type":"topic","expected":{"facts":["The seed reviews repeatedly discuss performance, battery, camera, price/value, delivery, and software/customer service."],"required_terms":["performance"],"must_not_claim":[]}},
+    {"id":"recommendation-01","question":"What should the product team investigate first?","type":"recommendation","expected":{"facts":["Negative evidence includes camera disappointment, expensive pricing, unhelpful customer service, late/damaged delivery, and software issues."],"required_terms":["camera"],"must_not_claim":["the root cause is known"]}},
+    {"id":"numeric-01","question":"Which aspect has the most mentions?","type":"numeric","expected":{"facts":["The answer must use the analyzed aspect counts from the current database snapshot."],"required_terms":[],"must_not_claim":["a count not present in the supplied evidence"]}},
+    {"id":"numeric-02","question":"What is the strongest negative sentiment signal?","type":"numeric","expected":{"facts":["The answer must identify a negative signal using the current analyzed sentiment/aspect evidence."],"required_terms":[],"must_not_claim":["an unsupported numerical value"]}},
+    {"id":"insufficient-01","question":"Why does the battery fail after one year?","type":"insufficient_evidence","expected":{"facts":["The seed reviews do not establish a one-year battery failure or its cause."],"required_terms":["insufficient"],"must_not_claim":["a technical cause of battery failure"]}},
+    {"id":"mixed-01","question":"Do customers agree about battery quality?","type":"contradictory_evidence","expected":{"facts":["The seed reviews contain positive battery-life feedback and a complaint about slow battery charging."],"required_terms":["battery"],"must_not_claim":["all customers agree"]}}
   ]
 }
