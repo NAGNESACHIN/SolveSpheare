@@ -5,4 +5,5 @@ export async function getSentiment(productId:string){return request<SentimentRes
 export async function getAspects(productId:string){return request<{product_id:string;aspects:Aspect[]}>(`/api/analysis/products/${productId}/aspects`);}
 export async function getTopics(productId:string){return request<{product_id:string;topics:Topic[]}>(`/api/analysis/products/${productId}/topics`);}
 export async function getInsights(productId:string){return request<{product_id:string;insights:Insight[]}>(`/api/insights/products/${productId}`);}
+export async function generateInsights(productId:string){return request<{product_id:string;status:string;insights_created:number;insights:Insight[]}>(`/api/insights/products/${productId}/generate`,{method:"POST"});}
 export async function analyzeProduct(productId:string){return request<{status:string}>(`/api/analysis/products/${productId}`,{method:"POST"});}
