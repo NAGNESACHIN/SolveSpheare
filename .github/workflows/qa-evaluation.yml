@@ -30,7 +30,7 @@ jobs:
 
       - name: Validate benchmark JSON
         run: python -m json.tool backend/evaluation/qa_eval.json >/dev/null
-
+\n      - name: Verify benchmark size\n        run: |\n          python - <<'PY'\n          import json\n          data = json.load(open('backend/evaluation/qa_eval.json', encoding='utf-8'))\n          assert len(data['questions']) == 30, f"Expected 30 questions, got {len(data['questions'])}"\n          print('30-question benchmark verified')\n          PY\n
       - name: Smoke-test ground-truth scoring
         run: |
           python - <<'PY'
