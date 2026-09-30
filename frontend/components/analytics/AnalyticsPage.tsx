@@ -1,5 +1,7 @@
 "use client";
 
+import type React from "react";
+
 import { useEffect, useState } from "react";
 import { getProducts, Product } from "../../lib/api";
 import AppShell from "../layout/AppShell";
