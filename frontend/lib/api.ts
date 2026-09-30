@@ -8,15 +8,31 @@ async function request<T>(path: string): Promise<T> {
 
 export type Product = { id: string; name: string; category?: string | null; brand?: string | null };
 export type Overview = {
+  product_id?: string | null;
   total_reviews: number;
   average_rating: number;
   sentiment_distribution: Record<string, number>;
 };
+export type Aspect = { aspect: string; mentions: number; average_sentiment: number };
+export type Topic = { topic_id: string; name: string; keywords: Record<string, string[]>; review_count: number; average_relevance: number };
+export type Review = { id: string; review_text: string; title?: string | null; rating?: number | null; reviewer_name?: string | null; source?: string | null };
 
 export async function getProducts() {
   return request<Product[]>("/api/products");
 }
 
-export async function getOverview() {
-  return request<Overview>("/api/analytics/overview");
+export async function getOverview(productId?: string) {
+  return request<Overview>(productId ? `/api/analytics/products/${productId}/overview` : "/api/analytics/overview");
+}
+
+export async function getAspects(productId: string) {
+  return request<{ aspects: Aspect[] }>(`/api/analysis/products/${productId}/aspects`);
+}
+
+export async function getTopics(productId: string) {
+  return request<{ topics: Topic[] }>(`/api/analysis/products/${productId}/topics`);
+}
+
+export async function getReviews(productId: string) {
+  return request<Review[]>(`/api/reviews?product_id=${productId}`);
 }
